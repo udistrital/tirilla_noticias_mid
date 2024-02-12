@@ -1,0 +1,78 @@
+package models
+
+type NoticiaRequest struct {
+	Noticia           Noticia           `json:"Noticia"`
+	Etiqueta          Etiqueta          `json:"Etiqueta"`
+	Contenido         Contenido         `json:"Contenido"`
+	ModuloPublicacion ModuloPublicacion `json:"ModuloPublicacion"`
+}
+
+type Noticia struct {
+	Activo       bool `json:"Activo"`
+	IdTipoEstilo struct {
+		Id int `json:"Id"`
+	} `json:"IdTipoEstilo"`
+	IdTipoPrioridad struct {
+		Id int `json:"Id"`
+	} `json:"IdTipoPrioridad"`
+}
+
+type Etiqueta struct {
+	Activo    bool `json:"Activo"`
+	IdNoticia struct {
+		Id int `json:"Id"`
+	} `json:"IdNoticia"`
+	IdTipoEtiqueta []int `json:"IdTipoEtiqueta"`
+}
+
+// EtiquetaData representa la estructura para enviar datos de etiqueta a la API CRUD
+type EtiquetaData struct {
+	Activo    bool `json:"Activo"`
+	IdNoticia struct {
+		Id int `json:"Id"`
+	} `json:"IdNoticia"`
+	IdTipoEtiqueta struct {
+		Id int `json:"Id"`
+	} `json:"IdTipoEtiqueta"`
+}
+
+type Contenido struct {
+	Id   []int    `json:"Id"`
+	Dato []string `json:"Dato"`
+}
+
+// ContenidoData representa la estructura para enviar datos del contenido a la API CRUD
+type ContenidoData struct {
+	Activo    bool   `json:"Activo"`
+	Dato      string `json:"Dato"`
+	IdNoticia struct {
+		Id int `json:"Id"`
+	} `json:"IdNoticia"`
+	IdTipoContenido struct {
+		Id int `json:"Id"`
+	} `json:"IdTipoContenido"`
+}
+
+type ModuloPublicacion struct {
+	IdModulo []string `json:"IdModulo"`
+}
+
+// ModuloPublicaionData representa la estructura para enviar datos del contenido a la API CRUD
+type ModuloPublicacionData struct {
+	Activo    bool `json:"Activo"`
+	IdNoticia struct {
+		Id int `json:"Id"`
+	} `json:"IdNoticia"`
+	RefModuloId string `json:"RefModuloId"`
+}
+
+type APIResponse struct {
+	Body []byte
+	Err  error
+}
+
+type NoticiaResponse struct {
+	Data struct {
+		ID int `json:"Id"`
+	} `json:"Data"`
+}
