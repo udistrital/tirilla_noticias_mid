@@ -3,12 +3,15 @@ package helpers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/udistrital/noticias_mid/models"
+	"github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid/models"
+	"github.com/udistrital/utils_oas/request"
+	"github.com/udistrital/utils_oas/requestresponse"
 )
 
 // Envia una petición con datos para cerar la tirilla de noticias
@@ -56,4 +59,44 @@ func SendRequestToCRUDAPI(endpoint string, data interface{}) models.APIResponse 
 	apiResp.Body = respBody
 
 	return apiResp
+}
+
+func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
+	var noticia []map[string]interface{}
+	var listado []map[string]interface{}
+	errNoticia := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia"), &noticia)
+	if errNoticia == nil {
+		fmt.Println("http://" + beego.AppConfig.String("noticiaService"))
+
+		for _, noti := range noticia {
+			noticiaContenido := map[string]interface{}{
+				"titulo":      "",
+				"descripcion": "",
+				"link":        "",
+			}
+			var responseNoticiaContenido []map[string]interface{}
+			errNoticiaContenido := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_tipo_contenido?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaContenido)
+			if errNoticiaContenido == nil {
+				for _, conte := range responseNoticiaContenido {
+					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == 1 {
+						noticiaContenido["titulo"] = conte["Dato"]
+					}
+					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == 2 {
+						noticiaContenido["descripcion"] = conte["Dato"]
+					}
+					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == 3 {
+						noticiaContenido["link"] = conte["Dato"]
+					}
+
+					listado = append(listado, noticiaContenido)
+				}
+			}
+		}
+
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, listado)
+
+	} else {
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil, errNoticia.Error())
+	}
+	return APIResponseDTO
 }

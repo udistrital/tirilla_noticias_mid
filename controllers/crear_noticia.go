@@ -7,8 +7,9 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/udistrital/noticias_mid/helpers"
-	"github.com/udistrital/noticias_mid/models"
+	"github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid/helpers"
+	"github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid/models"
+	"github.com/udistrital/utils_oas/errorhandler"
 )
 
 // Crear_noticiaController operations for Crear_noticia
@@ -170,7 +171,12 @@ func (c *Crear_noticiaController) GetOne() {
 // @Failure 403
 // @router / [get]
 func (c *Crear_noticiaController) GetAll() {
+	defer errorhandler.HandlePanic(&c.Controller)
+	respuesta := helpers.GetAllNoticias()
 
+	c.Ctx.Output.SetStatus(respuesta.Status)
+	c.Data["json"] = respuesta
+	c.ServeJSON()
 }
 
 // Put ...

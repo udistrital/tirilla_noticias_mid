@@ -1,6 +1,6 @@
-module github.com/udistrital/noticias_mid
+module github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid
 
-go 1.21.5
+go 1.18
 
 require (
 	github.com/astaxie/beego v1.12.3
