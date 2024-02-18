@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -64,7 +66,7 @@ func SendRequestToCRUDAPI(endpoint string, data interface{}) models.APIResponse 
 func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 	var noticia []map[string]interface{}
 	var listado []map[string]interface{}
-	errNoticia := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia"), &noticia)
+	errNoticia := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia?query=Activo:true&limit=0"), &noticia)
 	if errNoticia == nil {
 		fmt.Println("http://" + beego.AppConfig.String("noticiaService"))
 
@@ -73,29 +75,41 @@ func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 				"titulo":      "",
 				"descripcion": "",
 				"link":        "",
+				"activo":      noti["Activo"],
+				"estilo":      noti["IdTipoEstilo"].(map[string]interface{})["Id"],
+				"prioridad":   noti["IdTipoPrioridad"].(map[string]interface{})["Id"],
 			}
 			var responseNoticiaContenido []map[string]interface{}
 			errNoticiaContenido := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_tipo_contenido?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaContenido)
 			if errNoticiaContenido == nil {
 				for _, conte := range responseNoticiaContenido {
-					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == 1 {
-						noticiaContenido["titulo"] = conte["Dato"]
+					fmt.Println(reflect.TypeOf(conte["IdTipoContenido"].(map[string]interface{})["Id"]))
+					fmt.Println(conte["IdTipoContenido"].(map[string]interface{})["Id"])
+					dato := strings.ReplaceAll(conte["Dato"].(string), "{\"dato\": \"", "")
+					dato = strings.TrimSuffix(dato, "\"}")
+					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(1) {
+						fmt.Println("Entró")
+						noticiaContenido["titulo"] = dato
 					}
-					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == 2 {
-						noticiaContenido["descripcion"] = conte["Dato"]
+					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(2) {
+						noticiaContenido["descripcion"] = dato
 					}
-					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == 3 {
-						noticiaContenido["link"] = conte["Dato"]
+					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(3) {
+						noticiaContenido["link"] = dato
 					}
 
 					listado = append(listado, noticiaContenido)
 				}
+			} else {
+				APIResponseDTO = requestresponse.APIResponseDTO(false, 400, errNoticiaContenido.Error())
+				return APIResponseDTO
 			}
 		}
 
 		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, listado)
 
 	} else {
+		fmt.Println(errNoticia.Error())
 		APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil, errNoticia.Error())
 	}
 	return APIResponseDTO
