@@ -127,7 +127,23 @@ paths:
           description: '{string} delete success!'
         "403":
           description: id is empty
+  /noticia-mid/lista:
+    get:
+      tags:
+      - noticia-mid
+      description: get all Noticias with Etiquetas and Contenido
+      operationId: Crear_noticiaController.GetAllLista
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/interface{}'
+        "403":
+          description: ""
 definitions:
+  interface{}:
+    title: interface{}
+    type: object
   models.Crear_noticia:
     title: Crear_noticia
     type: object

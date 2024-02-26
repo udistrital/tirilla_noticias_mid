@@ -11,13 +11,13 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid/models"
+	"github.com/udistrital/tirilla_noticias_mid/models"
 	"github.com/udistrital/utils_oas/request"
 	"github.com/udistrital/utils_oas/requestresponse"
 )
 
 // Envia una petición con datos para cerar la tirilla de noticias
-func SendRequestToCRUDAPI(endpoint string, data interface{}) models.APIResponse {
+func SendRequestToCRUDAPI(endpoint string, data interface{}, method string) models.APIResponse {
 	APICRUDURL := beego.AppConfig.String("router.APICRUD")
 
 	rutaCompleta := APICRUDURL + endpoint
@@ -34,7 +34,7 @@ func SendRequestToCRUDAPI(endpoint string, data interface{}) models.APIResponse 
 	}
 
 	// Configurar la solicitud HTTP
-	req, err := http.NewRequest("POST", rutaCompleta, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest(method, rutaCompleta, bytes.NewBuffer(reqBody))
 	if err != nil {
 		apiResp.Err = err
 		return models.APIResponse{Err: err}
@@ -71,14 +71,11 @@ func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 		fmt.Println("http://" + beego.AppConfig.String("noticiaService"))
 
 		for _, noti := range noticia {
-			noticiaContenido := map[string]interface{}{
-				"titulo":      "",
-				"descripcion": "",
-				"link":        "",
-				"activo":      noti["Activo"],
-				"estilo":      noti["IdTipoEstilo"].(map[string]interface{})["Id"],
-				"prioridad":   noti["IdTipoPrioridad"].(map[string]interface{})["Id"],
-			}
+			var noticiaContenido = make(map[string]interface{}) // Mover la inicialización aquí
+			noticiaContenido["activo"] = noti["Activo"]
+			noticiaContenido["estilo"] = noti["IdTipoEstilo"].(map[string]interface{})["Id"]
+			noticiaContenido["prioridad"] = noti["IdTipoPrioridad"].(map[string]interface{})["Id"]
+
 			var responseNoticiaContenido []map[string]interface{}
 			errNoticiaContenido := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_tipo_contenido?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaContenido)
 			if errNoticiaContenido == nil {
@@ -97,9 +94,8 @@ func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(3) {
 						noticiaContenido["link"] = dato
 					}
-
-					listado = append(listado, noticiaContenido)
 				}
+				listado = append(listado, noticiaContenido) // Mover la adición a listado aquí
 			} else {
 				APIResponseDTO = requestresponse.APIResponseDTO(false, 400, errNoticiaContenido.Error())
 				return APIResponseDTO
@@ -113,4 +109,118 @@ func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 		APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil, errNoticia.Error())
 	}
 	return APIResponseDTO
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func GetAllLista() ([]models.NoticiaSend, error) {
+	var noticiasConTodo []models.NoticiaSend
+
+	// Obtener todas las noticias
+	apiNoticiaURL := beego.AppConfig.String("router.noticia")
+	noticiasResp := SendRequestToCRUDAPI(apiNoticiaURL, nil, "GET")
+	if noticiasResp.Err != nil {
+		return nil, fmt.Errorf("error al obtener las noticias: %v", noticiasResp.Err)
+	}
+	var noticias []models.NoticiaGetAll
+	if err := json.Unmarshal(noticiasResp.Body, &noticias); err != nil {
+		return nil, fmt.Errorf("error al decodificar la respuesta JSON de las noticias: %v", err)
+	}
+
+	// Iterar sobre cada noticia para obtener las etiquetas y el contenido asociados
+	for _, noticia := range noticias {
+		var noticiaConTodo models.NoticiaSend
+		noticiaConTodo.Noticia = noticia
+
+		//Obtener las etiquetas asociadas a la noticia
+		etiquetas, err := obtenerEtiquetasPorNoticia(noticia.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error al obtener las etiquetas de la noticia %d: %v", noticia.Id, err)
+		}
+		noticiaConTodo.Etiquetas = []models.Etiqueta{etiquetas} // Corregir aquí
+
+		// Obtener el contenido asociado a la noticia
+		contenido, err := obtenerContenidoPorNoticia(noticia.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error al obtener el contenido de la noticia %d: %v", noticia.Id, err)
+		}
+		noticiaConTodo.Contenido = []models.Contenido{contenido} // Corregir aquí
+
+		// Agregar la noticia con todo al array
+		noticiasConTodo = append(noticiasConTodo, noticiaConTodo)
+	}
+
+	return noticiasConTodo, nil
+}
+
+func obtenerEtiquetasPorNoticia(noticiaID int) (models.Etiqueta, error) {
+	var etiquetaRespuesta models.EtiquetaResponse
+
+	// Construir la URL para obtener las etiquetas asociadas a la noticia
+	apiEtiquetaURL := fmt.Sprintf("%s/etiquetas/%d", beego.AppConfig.String("router.etiqueta"), noticiaID)
+	etiquetasResp := SendRequestToCRUDAPI(apiEtiquetaURL, nil, "GET")
+	if etiquetasResp.Err != nil {
+		logs.Error("Error al obtener las etiquetas asociadas a la noticia:", etiquetasResp.Err)
+		return models.Etiqueta{}, etiquetasResp.Err
+	}
+
+	// Decodificar la respuesta JSON en una estructura de etiquetas
+	if err := json.Unmarshal(etiquetasResp.Body, &etiquetaRespuesta); err != nil {
+		logs.Error("Error al decodificar la respuesta JSON de etiquetas:", err)
+		return models.Etiqueta{}, err
+	}
+
+	// Crear una nueva estructura para el formato deseado
+	etiqueta := models.Etiqueta{
+		Activo: etiquetaRespuesta.Data[0].Activo,
+		IdNoticia: struct {
+			Id int `json:"Id"`
+		}{Id: noticiaID},
+		//IdTipoEtiqueta: make([]int, len(etiquetaRespuesta.Data)),
+		IdTipoEtiqueta: []int{},
+	}
+
+	// Agregar los IDs de las etiquetas al array
+	for _, etiquetaData := range etiquetaRespuesta.Data {
+		if etiquetaData.Activo {
+			etiqueta.IdTipoEtiqueta = append(etiqueta.IdTipoEtiqueta, etiquetaData.TipoEtiqueta.Id)
+		}
+	}
+
+	return etiqueta, nil
+}
+
+func obtenerContenidoPorNoticia(noticiaID int) (models.Contenido, error) {
+	var contenidoRespuesta models.ContenidoResponse
+	var contenido models.Contenido
+
+	// Construir la URL para obtener el contenido asociado a la noticia
+	apiContenidoURL := fmt.Sprintf("%s/contenido/%d", beego.AppConfig.String("router.contenido"), noticiaID)
+	contenidoResp := SendRequestToCRUDAPI(apiContenidoURL, nil, "GET")
+	if contenidoResp.Err != nil {
+		logs.Error("Error al obtener el contenido asociado a la noticia:", contenidoResp.Err)
+		return contenido, contenidoResp.Err
+	}
+
+	// Decodificar la respuesta JSON en una estructura de contenido
+	if err := json.Unmarshal(contenidoResp.Body, &contenidoRespuesta); err != nil {
+		logs.Error("Error al decodificar la respuesta JSON de contenido:", err)
+		return contenido, err
+	}
+
+	// Convertir la estructura de contenido a la estructura deseada por el cliente
+	for _, item := range contenidoRespuesta.Data {
+		var datoMap map[string]string
+		err := json.Unmarshal([]byte(item.Dato), &datoMap)
+		if err != nil {
+			logs.Error("Error al decodificar el dato JSON:", err)
+			return contenido, err
+		}
+		contenido.Id = append(contenido.Id, item.IdTipoContenido.Id)
+		contenido.Dato = append(contenido.Dato, datoMap["dato"])
+	}
+
+	return contenido, nil
 }

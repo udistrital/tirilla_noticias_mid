@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid/helpers"
-	"github.com/udistrital/tirilla_noticias_mid/tirilla_noticias_mid/models"
+	"github.com/udistrital/tirilla_noticias_mid/helpers"
+	"github.com/udistrital/tirilla_noticias_mid/models"
 	"github.com/udistrital/utils_oas/errorhandler"
 )
 
@@ -23,6 +24,7 @@ func (c *Crear_noticiaController) URLMapping() {
 	c.Mapping("GetOne", c.GetOne)
 	c.Mapping("GetAll", c.GetAll)
 	c.Mapping("Put", c.Put)
+	c.Mapping("GetAllLista", c.GetAllLista)
 	c.Mapping("Delete", c.Delete)
 }
 
@@ -52,7 +54,7 @@ func (c *Crear_noticiaController) Post() {
 	contenido := reqBody.Contenido
 	moduloPublicaion := reqBody.ModuloPublicacion
 
-	apiResp := helpers.SendRequestToCRUDAPI(apiNoticiaURL, noticia)
+	apiResp := helpers.SendRequestToCRUDAPI(apiNoticiaURL, noticia, "POST")
 	if apiResp.Err != nil {
 		logs.Error("Error al enviar la solicitud a la API CRUD para Noticia:", apiResp.Err)
 		c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para Noticia")
@@ -84,7 +86,7 @@ func (c *Crear_noticiaController) Post() {
 		}
 
 		// Enviar la solicitud POST a la API CRUD para la etiqueta
-		apiResp := helpers.SendRequestToCRUDAPI(apiEtiquetaURL, etiquetaData)
+		apiResp := helpers.SendRequestToCRUDAPI(apiEtiquetaURL, etiquetaData, "POST")
 		if apiResp.Err != nil {
 			logs.Error("Error al enviar la solicitud a la API CRUD para la etiqueta:", apiResp.Err)
 			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para la etiqueta")
@@ -111,7 +113,7 @@ func (c *Crear_noticiaController) Post() {
 		}
 
 		// Enviar la solicitud POST a la API CRUD para el contenido
-		apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, contenidoData)
+		apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, contenidoData, "POST")
 		if apiResp.Err != nil {
 			logs.Error("Error al enviar la solicitud a la API CRUD para el contenido:", apiResp.Err)
 			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para el contenido")
@@ -132,7 +134,7 @@ func (c *Crear_noticiaController) Post() {
 		}
 
 		// Enviar la solicitud POST a la API CRUD para el moduloPublicaion
-		apiResp := helpers.SendRequestToCRUDAPI(apiModuloURL, moduloPublicaionData)
+		apiResp := helpers.SendRequestToCRUDAPI(apiModuloURL, moduloPublicaionData, "POST")
 		if apiResp.Err != nil {
 			logs.Error("Error al enviar la solicitud a la API CRUD para el moduloPublicaion:", apiResp.Err)
 			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para el moduloPublicaion")
@@ -179,6 +181,26 @@ func (c *Crear_noticiaController) GetAll() {
 	c.ServeJSON()
 }
 
+// GetAllLista ...
+// @Title GetAllLista
+// @Description get all Noticias with Etiquetas and Contenido
+// @Success 200 {object} interface{}
+// @Failure 403
+// @router /lista [get]
+func (c *Crear_noticiaController) GetAllLista() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
+	noticias, err := helpers.GetAllLista()
+	if err != nil {
+		logs.Error("Error al obtener todas las noticias con etiquetas y contenido:", err)
+		c.CustomAbort(http.StatusInternalServerError, "Error al obtener todas las noticias con etiquetas y contenido")
+		return
+	}
+
+	c.Data["json"] = noticias
+	c.ServeJSON()
+}
+
 // Put ...
 // @Title Put
 // @Description update the Crear_noticia
@@ -188,6 +210,374 @@ func (c *Crear_noticiaController) GetAll() {
 // @Failure 403 :id is not int
 // @router /:id [put]
 func (c *Crear_noticiaController) Put() {
+
+	//apiNoticiaURL := beego.AppConfig.String("router.noticia")
+	apiEtiquetaURL := beego.AppConfig.String("router.etiqueta")
+	apiContenidoURL := beego.AppConfig.String("router.contenido")
+	// apiModuloURL := beego.AppConfig.String("router.modulo")
+
+	etiquetas_desactivar_id := []int{}
+	etiquetas_desactivar_fk := []int{}
+
+	contenido_desactivar_id := []int{}
+	contenido_desactivar_fk := []int{}
+	//contenido_desactivar_id_tipo_contenido := []int{}
+
+	// Obtener el ID de la noticia a actualizar del parámetro de la URL
+	idStr := c.Ctx.Input.Param(":id")
+	id, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		logs.Error("Error al convertir el ID de la noticia:", err)
+		c.CustomAbort(http.StatusBadRequest, "ID de la noticia inválido")
+		return
+	}
+
+	logs.Info("ID de la noticia:", id)
+
+	// Decodificar el cuerpo de la solicitud en un objeto NoticiaRequest
+	var reqBody models.NoticiaRequest
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &reqBody); err != nil {
+		logs.Error("Error al decodificar el cuerpo de la solicitud:", err)
+		c.CustomAbort(http.StatusBadRequest, "Error al decodificar el cuerpo de la solicitud")
+		return
+	}
+
+	logs.Info("Cuerpo de la solicitud:", reqBody)
+	noticia := reqBody.Noticia
+	etiqueta := reqBody.Etiqueta
+	contenido := reqBody.Contenido
+	moduloPublicaion := reqBody.ModuloPublicacion
+
+	logs.Info("Noticiaaaaaaa:", noticia)
+	logs.Info("Modulo de publicación:", moduloPublicaion)
+
+	// Actualizar la noticia en la tabla Noticia
+	apiNoticiaURL := fmt.Sprintf("%s/%d", beego.AppConfig.String("router.noticia"), id)
+	apiResp := helpers.SendRequestToCRUDAPI(apiNoticiaURL, noticia, "PUT")
+	if apiResp.Err != nil {
+		logs.Error("Error al enviar la solicitud a la API CRUD para actualizar la noticia:", apiResp.Err)
+		c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para actualizar la noticia")
+		return
+	}
+
+	// Ahora, después de actualizar la noticia, vamos a obtener todas las etiquetas asociadas a esta noticia
+	apiEtiquetasURL := fmt.Sprintf("%s/etiquetas/%d", beego.AppConfig.String("router.etiqueta"), id)
+	etiquetasResp := helpers.SendRequestToCRUDAPI(apiEtiquetasURL, nil, "GET")
+	if etiquetasResp.Err != nil {
+		logs.Error("Error al obtener las etiquetas asociadas a la noticia:", etiquetasResp.Err)
+		c.CustomAbort(http.StatusInternalServerError, "Error al obtener las etiquetas asociadas a la noticia")
+		return
+	}
+
+	// Decodificar la respuesta JSON en la estructura definida
+	var etiquetaRespuesta models.EtiquetaResponse
+	if err := json.Unmarshal(etiquetasResp.Body, &etiquetaRespuesta); err != nil {
+		logs.Error("Error al decodificar la respuesta JSON de etiquetas:", err)
+		c.CustomAbort(http.StatusInternalServerError, "Error al decodificar la respuesta JSON de etiquetas")
+		return
+	}
+
+	//############################################################################################################# Etiqueta
+
+	// Crear nuevas etiquetas para las etiquetas en la solicitud PUT que no estén en la respuesta de la API
+	for _, etiquetaPUT := range etiqueta.IdTipoEtiqueta {
+		etiquetaEncontrada := false
+
+		// Iterar sobre las etiquetas de la respuesta de la API
+		for _, etiquetaAPI := range etiquetaRespuesta.Data {
+			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
+			if etiquetaAPI.TipoEtiqueta.Id == etiquetaPUT {
+				etiquetaEncontrada = true
+
+				// Si la etiqueta de la API está desactivada, activarla
+				if !etiquetaAPI.Activo {
+					logs.Info("Activando la etiqueta:", etiquetaAPI)
+					activarEtiqueta := models.EtiquetaData{
+						Activo: true,
+						IdNoticia: struct {
+							Id int `json:"Id"`
+						}{
+							Id: id, // Id de la noticia
+						},
+						IdTipoEtiqueta: struct {
+							Id int `json:"Id"`
+						}{
+							Id: etiquetaAPI.TipoEtiqueta.Id,
+						},
+					}
+
+					// Enviar la solicitud para activar la etiqueta
+					apiResp := helpers.SendRequestToCRUDAPI(apiEtiquetaURL+"/"+strconv.Itoa(etiquetaAPI.Id), activarEtiqueta, "PUT")
+					if apiResp.Err != nil {
+						logs.Error("Error al enviar la solicitud a la API CRUD para activar la etiqueta:", apiResp.Err)
+						c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar la etiqueta")
+						return
+					}
+					break
+				}
+			}
+		}
+
+		// Si la etiqueta de la solicitud PUT no está en la respuesta de la API, crear una nueva etiqueta
+		if !etiquetaEncontrada {
+			nuevaEtiqueta := models.EtiquetaData{
+				Activo: true,
+				IdNoticia: struct {
+					Id int `json:"Id"`
+				}{
+					Id: id, // Id de la noticia
+				},
+				IdTipoEtiqueta: struct {
+					Id int `json:"Id"`
+				}{
+					Id: etiquetaPUT,
+				},
+			}
+
+			// Enviar la solicitud para crear la nueva etiqueta
+			apiResp := helpers.SendRequestToCRUDAPI(apiEtiquetaURL, nuevaEtiqueta, "POST")
+			if apiResp.Err != nil {
+				logs.Error("Error al enviar la solicitud a la API CRUD para la etiqueta:", apiResp.Err)
+				c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para la etiqueta")
+				return
+			}
+		}
+	}
+
+	// Iterar sobre las etiquetas de la respuesta de la API
+	for _, etiquetaAPI := range etiquetaRespuesta.Data {
+		etiquetaEncontrada := false
+
+		// Iterar sobre las etiquetas de la solicitud PUT
+		for _, etiquetaPUT := range etiqueta.IdTipoEtiqueta {
+			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
+			if etiquetaAPI.TipoEtiqueta.Id == etiquetaPUT {
+				etiquetaEncontrada = true
+				break
+			}
+		}
+
+		// Si la etiqueta de la API no está en la solicitud PUT, desactivarla
+		if !etiquetaEncontrada {
+			etiquetaAPI.Activo = false
+			etiquetas_desactivar_id = append(etiquetas_desactivar_id, etiquetaAPI.Id)
+			etiquetas_desactivar_fk = append(etiquetas_desactivar_fk, etiquetaAPI.TipoEtiqueta.Id)
+		}
+	}
+
+	// Iterar sobre las etiquetas para desactivar
+	for i, idEtiqueta := range etiquetas_desactivar_id {
+		// Obtener el IdTipoEtiqueta correspondiente del arreglo etiquetas_desactivar_fk
+		idTipoEtiqueta := etiquetas_desactivar_fk[i]
+
+		// Crear una estructura EtiquetaData con el campo Activo establecido en false
+		etiquetaDesactivar := models.EtiquetaData{
+			Activo: false,
+			IdNoticia: struct {
+				Id int `json:"Id"`
+			}{
+				Id: id, // ID de la noticia
+			},
+			IdTipoEtiqueta: struct {
+				Id int `json:"Id"`
+			}{
+				Id: idTipoEtiqueta, // ID del tipo de etiqueta
+			},
+		}
+
+		// Enviar la solicitud para desactivar la etiqueta
+		apiResp := helpers.SendRequestToCRUDAPI(apiEtiquetaURL+"/"+strconv.Itoa(idEtiqueta), etiquetaDesactivar, "PUT")
+		if apiResp.Err != nil {
+			logs.Error("Error al enviar la solicitud a la API CRUD para desactivar la etiqueta:", apiResp.Err)
+			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para desactivar la etiqueta")
+			return
+		}
+	}
+
+	//############################################################################################################# Contenido
+
+	// Ahora, después de actualizar la etiqueta, vamos a obtener todo el contenido asociado a esta noticia
+	apiContenidosURL := fmt.Sprintf("%s/contenido/%d", beego.AppConfig.String("router.contenido"), id)
+	contenidoResp := helpers.SendRequestToCRUDAPI(apiContenidosURL, nil, "GET")
+	if contenidoResp.Err != nil {
+		logs.Error("Error al obtener las etiquetas asociadas a la noticia:", contenidoResp.Err)
+		c.CustomAbort(http.StatusInternalServerError, "Error al obtener las etiquetas asociadas a la noticia")
+		return
+	}
+
+	// Decodificar la respuesta JSON en la estructura definida
+	var contenidoRespuesta models.ContenidoResponse
+	if err := json.Unmarshal(contenidoResp.Body, &contenidoRespuesta); err != nil {
+		logs.Error("Error al decodificar la respuesta JSON de contenido:", err)
+		c.CustomAbort(http.StatusInternalServerError, "Error al decodificar la respuesta JSON de contenido")
+		return
+	}
+
+	logs.Info("Respuesta decodificada de la API CRUD para contenido:", contenidoRespuesta)
+
+	// Crear nuevas etiquetas para las etiquetas en la solicitud PUT que no estén en la respuesta de la API
+	for i, contenidoPUT := range contenido.Id {
+		ContenidoEncontrado := false
+
+		// Iterar sobre las etiquetas de la respuesta de la API
+		for _, contenidoAPI := range contenidoRespuesta.Data {
+			// Si el contenido de la solicitud PUT coincide con un contenido de la respuesta de la API
+			if contenidoAPI.IdTipoContenido.Id == contenidoPUT {
+				ContenidoEncontrado = true
+
+				// Si el contenido de la API está desactivado, activarlo
+				if !contenidoAPI.Activo {
+					datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
+					// logs.Info("Activando la etiqueta:", contenidoAPI)
+					//logs.Info("Contenido:", contenido.Dato[contenidoPUT])
+					activarContenido := models.ContenidoData{
+						Activo: true,
+						Dato:   datoJSON,
+						IdNoticia: struct {
+							Id int `json:"Id"`
+						}{
+							Id: id, // Id de la noticia
+						},
+						IdTipoContenido: struct {
+							Id int `json:"Id"`
+						}{
+							Id: contenidoAPI.IdTipoContenido.Id,
+						},
+					}
+
+					logs.Info("Activando contenido:", activarContenido)
+
+					// Enviar la solicitud para activar el contenido
+					apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(contenidoAPI.Id), activarContenido, "PUT")
+					if apiResp.Err != nil {
+						logs.Error("Error al enviar la solicitud a la API CRUD para activar el contenido:", apiResp.Err)
+						c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar el contenido")
+						return
+					}
+					break
+				} else {
+					datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
+					// logs.Info("Activando la etiqueta:", contenidoAPI)
+					//logs.Info("Contenido:", contenido.Dato[contenidoPUT])
+					activarContenido := models.ContenidoData{
+						Activo: true,
+						Dato:   datoJSON,
+						IdNoticia: struct {
+							Id int `json:"Id"`
+						}{
+							Id: id, // Id de la noticia
+						},
+						IdTipoContenido: struct {
+							Id int `json:"Id"`
+						}{
+							Id: contenidoAPI.IdTipoContenido.Id,
+						},
+					}
+
+					logs.Info("Activando contenido:", activarContenido)
+
+					// Enviar la solicitud para activar el contenido
+					apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(contenidoAPI.Id), activarContenido, "PUT")
+					if apiResp.Err != nil {
+						logs.Error("Error al enviar la solicitud a la API CRUD para activar el contenido:", apiResp.Err)
+						c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar el contenido")
+						return
+					}
+					break
+				}
+			}
+		}
+
+		// Si el contenido de la solicitud PUT no está en la respuesta de la API, crear un nuevo contenido
+		if !ContenidoEncontrado {
+			datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[contenidoPUT])
+			nuevoContenido := models.ContenidoData{
+				Activo: true,
+				Dato:   datoJSON,
+				IdNoticia: struct {
+					Id int `json:"Id"`
+				}{
+					Id: id, // Id de la noticia
+				},
+				IdTipoContenido: struct {
+					Id int `json:"Id"`
+				}{
+					Id: contenidoPUT,
+				},
+			}
+
+			logs.Info("Creando nuevo contenido:", nuevoContenido)
+
+			// Enviar la solicitud para crear la nueva etiqueta
+			apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, nuevoContenido, "POST")
+			if apiResp.Err != nil {
+				logs.Error("Error al enviar la solicitud a la API CRUD para la etiqueta:", apiResp.Err)
+				c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para la etiqueta")
+				return
+			}
+		}
+	}
+
+	// Iterar sobre las etiquetas de la respuesta de la API
+	for _, contenidoAPI := range contenidoRespuesta.Data {
+		contenidoEncontrado := false
+
+		// Iterar sobre las etiquetas de la solicitud PUT
+		for _, contenidoPUT := range contenido.Id {
+			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
+			if contenidoAPI.IdTipoContenido.Id == contenidoPUT {
+				contenidoEncontrado = true
+				break
+			}
+		}
+
+		// Si la etiqueta de la API no está en la solicitud PUT, desactivarla
+		if !contenidoEncontrado {
+			contenidoAPI.Activo = false
+			contenido_desactivar_id = append(contenido_desactivar_id, contenidoAPI.Id)
+			contenido_desactivar_fk = append(contenido_desactivar_fk, contenidoAPI.IdTipoContenido.Id)
+			//contenido_desactivar_id_tipo_contenido = append(contenido_desactivar_id_tipo_contenido, contenidoAPI.IdTipoContenido.Id)
+		}
+	}
+
+	// Iterar sobre las etiquetas para desactivar
+	for i, idContenido := range contenido_desactivar_id {
+		// Obtener el IdTipoEtiqueta correspondiente del arreglo etiquetas_desactivar_fk
+		IdTipoContenido := contenido_desactivar_fk[i]
+
+		logs.Info("IdTipoContenido:", IdTipoContenido)
+		logs.Info("valor a guardar en dato:", contenidoRespuesta.Data[IdTipoContenido-1].Dato)
+
+		// Crear una estructura EtiquetaData con el campo Activo establecido en false
+		contenidoDesactivar := models.ContenidoData{
+			Activo: false,
+			Dato:   contenidoRespuesta.Data[IdTipoContenido-1].Dato,
+			IdNoticia: struct {
+				Id int `json:"Id"`
+			}{
+				Id: id, // ID de la noticia
+			},
+			IdTipoContenido: struct {
+				Id int `json:"Id"`
+			}{
+				Id: IdTipoContenido, // ID del tipo de etiqueta
+			},
+		}
+
+		// Enviar la solicitud para desactivar la etiqueta
+		apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(idContenido), contenidoDesactivar, "PUT")
+		if apiResp.Err != nil {
+			logs.Error("Error al enviar la solicitud a la API CRUD para desactivar la etiqueta:", apiResp.Err)
+			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para desactivar la etiqueta")
+			return
+		}
+	}
+
+	// Respondiendo al cliente Angular
+	c.Ctx.Output.SetStatus(http.StatusOK)
+	c.Data["json"] = map[string]string{"message": "Noticia actualizada exitosamente"}
+	c.ServeJSON()
 
 }
 

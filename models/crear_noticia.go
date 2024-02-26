@@ -7,6 +7,13 @@ type NoticiaRequest struct {
 	ModuloPublicacion ModuloPublicacion `json:"ModuloPublicacion"`
 }
 
+// NoticiaSend representa la estructura para enviar la noticia al cliente en la ventana de listar noticias
+type NoticiaSend struct {
+	Noticia   NoticiaGetAll `json:"Noticia"`
+	Etiquetas []Etiqueta    `json:"Etiquetas"`
+	Contenido []Contenido   `json:"Contenido"`
+}
+
 type Noticia struct {
 	Activo       bool `json:"Activo"`
 	IdTipoEstilo struct {
@@ -75,4 +82,15 @@ type NoticiaResponse struct {
 	Data struct {
 		ID int `json:"Id"`
 	} `json:"Data"`
+}
+
+type NoticiaGetAll struct {
+	Id           int  `json:"Id"`
+	Activo       bool `json:"Activo"`
+	IdTipoEstilo struct {
+		Id int `json:"Id"`
+	} `json:"IdTipoEstilo"`
+	IdTipoPrioridad struct {
+		Id int `json:"Id"`
+	} `json:"IdTipoPrioridad"`
 }

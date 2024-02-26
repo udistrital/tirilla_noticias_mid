@@ -102,6 +102,26 @@
                 }
             }
         },
+        "/noticia-mid/lista": {
+            "get": {
+                "tags": [
+                    "noticia-mid"
+                ],
+                "description": "get all Noticias with Etiquetas and Contenido",
+                "operationId": "Crear_noticiaController.GetAllLista",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/interface{}"
+                        }
+                    },
+                    "403": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/noticia-mid/{id}": {
             "get": {
                 "tags": [
@@ -193,6 +213,10 @@
         }
     },
     "definitions": {
+        "interface{}": {
+            "title": "interface{}",
+            "type": "object"
+        },
         "models.Crear_noticia": {
             "title": "Crear_noticia",
             "type": "object"
