@@ -64,6 +64,7 @@ func SendRequestToCRUDAPI(endpoint string, data interface{}, method string) mode
 }
 
 func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
+
 	var noticia []map[string]interface{}
 	var listado []map[string]interface{}
 	errNoticia := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia?query=Activo:true&limit=0"), &noticia)
@@ -73,25 +74,27 @@ func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 		for _, noti := range noticia {
 			var noticiaContenido = make(map[string]interface{}) // Mover la inicialización aquí
 			noticiaContenido["activo"] = noti["Activo"]
-			noticiaContenido["estilo"] = noti["IdTipoEstilo"].(map[string]interface{})["Id"]
-			noticiaContenido["prioridad"] = noti["IdTipoPrioridad"].(map[string]interface{})["Id"]
+			noticiaContenido["estilo"] = noti["IdEstilo"]
+			noticiaContenido["prioridad"] = noti["Prioridad"]
+			noticiaContenido["FechaInicio"] = noti["FechaInicio"]
+			noticiaContenido["FechaFinal"] = noti["FechaFinal"]
 
 			var responseNoticiaContenido []map[string]interface{}
-			errNoticiaContenido := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_tipo_contenido?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaContenido)
+			errNoticiaContenido := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_contenido?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaContenido)
 			if errNoticiaContenido == nil {
 				for _, conte := range responseNoticiaContenido {
-					fmt.Println(reflect.TypeOf(conte["IdTipoContenido"].(map[string]interface{})["Id"]))
-					fmt.Println(conte["IdTipoContenido"].(map[string]interface{})["Id"])
+					fmt.Println(reflect.TypeOf(conte["IdContenido"]))
+					fmt.Println(conte["IdContenido"])
 					dato := strings.ReplaceAll(conte["Dato"].(string), "{\"dato\": \"", "")
 					dato = strings.TrimSuffix(dato, "\"}")
-					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(1) {
+					if conte["IdContenido"] == float64(1) {
 						fmt.Println("Entró")
 						noticiaContenido["titulo"] = dato
 					}
-					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(2) {
+					if conte["IdContenido"] == float64(2) {
 						noticiaContenido["descripcion"] = dato
 					}
-					if conte["IdTipoContenido"].(map[string]interface{})["Id"] == float64(3) {
+					if conte["IdContenido"] == float64(3) {
 						noticiaContenido["link"] = dato
 					}
 				}
@@ -111,48 +114,66 @@ func GetAllNoticias() (APIResponseDTO requestresponse.APIResponse) {
 	return APIResponseDTO
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+func GetAllLista() (APIResponseDTO requestresponse.APIResponse) {
+	var noticia []map[string]interface{}
+	var listado []map[string]interface{}
+	errNoticia := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia?query=Activo:true&limit=0"), &noticia)
+	if errNoticia == nil {
+		fmt.Println("http://" + beego.AppConfig.String("noticiaService"))
 
-func GetAllLista() ([]models.NoticiaSend, error) {
-	var noticiasConTodo []models.NoticiaSend
+		for _, noti := range noticia {
+			var noticiaContenido = make(map[string]interface{}) // Mover la inicialización aquí
+			noticiaContenido["activo"] = noti["Activo"]
+			noticiaContenido["estilo"] = noti["IdEstilo"]
+			noticiaContenido["prioridad"] = noti["Prioridad"]
+			noticiaContenido["FechaInicio"] = noti["FechaInicio"]
+			noticiaContenido["FechaFinal"] = noti["FechaFinal"]
 
-	// Obtener todas las noticias
-	apiNoticiaURL := beego.AppConfig.String("router.noticia")
-	noticiasResp := SendRequestToCRUDAPI(apiNoticiaURL, nil, "GET")
-	if noticiasResp.Err != nil {
-		return nil, fmt.Errorf("error al obtener las noticias: %v", noticiasResp.Err)
-	}
-	var noticias []models.NoticiaGetAll
-	if err := json.Unmarshal(noticiasResp.Body, &noticias); err != nil {
-		return nil, fmt.Errorf("error al decodificar la respuesta JSON de las noticias: %v", err)
-	}
+			var responseNoticiaContenido []map[string]interface{}
+			errNoticiaContenido := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_contenido?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaContenido)
+			if errNoticiaContenido == nil {
+				for _, conte := range responseNoticiaContenido {
+					fmt.Println(reflect.TypeOf(conte["IdContenido"]))
+					fmt.Println(conte["IdContenido"])
+					dato := strings.ReplaceAll(conte["Dato"].(string), "{\"dato\": \"", "")
+					dato = strings.TrimSuffix(dato, "\"}")
+					if conte["IdContenido"] == float64(1) {
+						fmt.Println("Entró")
+						noticiaContenido["titulo"] = dato
+					}
+					if conte["IdContenido"] == float64(2) {
+						noticiaContenido["descripcion"] = dato
+					}
+					if conte["IdContenido"] == float64(3) {
+						noticiaContenido["link"] = dato
+					}
+				}
+				var responseNoticiaEtiqueta []map[string]interface{}
+				errNoticiaEtiqueta := request.GetJson("http://"+beego.AppConfig.String("noticiaService")+fmt.Sprintf("/noticia_etiqueta?query=IdNoticia__id:%v", noti["Id"]), &responseNoticiaEtiqueta)
+				for _, eti := range responseNoticiaEtiqueta {
+					fmt.Println(eti["IdEtiqueta"])
+					noticiaContenido["IdEtiqueta"] = eti["IdEtiqueta"]
+				}
+				if errNoticiaEtiqueta == nil {
+					listado = append(listado, noticiaContenido) // Mover la adición a listado aquí
+				} else {
+					APIResponseDTO = requestresponse.APIResponseDTO(false, 400, errNoticiaEtiqueta.Error())
+					return APIResponseDTO
+				}
 
-	// Iterar sobre cada noticia para obtener las etiquetas y el contenido asociados
-	for _, noticia := range noticias {
-		var noticiaConTodo models.NoticiaSend
-		noticiaConTodo.Noticia = noticia
-
-		//Obtener las etiquetas asociadas a la noticia
-		etiquetas, err := obtenerEtiquetasPorNoticia(noticia.Id)
-		if err != nil {
-			return nil, fmt.Errorf("error al obtener las etiquetas de la noticia %d: %v", noticia.Id, err)
+			} else {
+				APIResponseDTO = requestresponse.APIResponseDTO(false, 400, errNoticiaContenido.Error())
+				return APIResponseDTO
+			}
 		}
-		noticiaConTodo.Etiquetas = []models.Etiqueta{etiquetas} // Corregir aquí
 
-		// Obtener el contenido asociado a la noticia
-		contenido, err := obtenerContenidoPorNoticia(noticia.Id)
-		if err != nil {
-			return nil, fmt.Errorf("error al obtener el contenido de la noticia %d: %v", noticia.Id, err)
-		}
-		noticiaConTodo.Contenido = []models.Contenido{contenido} // Corregir aquí
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, listado)
 
-		// Agregar la noticia con todo al array
-		noticiasConTodo = append(noticiasConTodo, noticiaConTodo)
+	} else {
+		fmt.Println(errNoticia.Error())
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil, errNoticia.Error())
 	}
-
-	return noticiasConTodo, nil
+	return APIResponseDTO
 }
 
 func obtenerEtiquetasPorNoticia(noticiaID int) (models.Etiqueta, error) {
@@ -185,7 +206,7 @@ func obtenerEtiquetasPorNoticia(noticiaID int) (models.Etiqueta, error) {
 	// Agregar los IDs de las etiquetas al array
 	for _, etiquetaData := range etiquetaRespuesta.Data {
 		if etiquetaData.Activo {
-			etiqueta.IdTipoEtiqueta = append(etiqueta.IdTipoEtiqueta, etiquetaData.TipoEtiqueta.Id)
+			etiqueta.IdTipoEtiqueta = append(etiqueta.IdTipoEtiqueta, etiquetaData.IdEtiqueta)
 		}
 	}
 
@@ -218,7 +239,7 @@ func obtenerContenidoPorNoticia(noticiaID int) (models.Contenido, error) {
 			logs.Error("Error al decodificar el dato JSON:", err)
 			return contenido, err
 		}
-		contenido.Id = append(contenido.Id, item.IdTipoContenido.Id)
+		contenido.Id = append(contenido.Id, item.IdContenido)
 		contenido.Dato = append(contenido.Dato, datoMap["dato"])
 	}
 

@@ -78,11 +78,7 @@ func (c *Crear_noticiaController) Post() {
 			}{
 				Id: noticiaID,
 			},
-			IdTipoEtiqueta: struct {
-				Id int `json:"Id"`
-			}{
-				Id: etiquetaID,
-			},
+			IdEtiqueta: etiquetaID,
 		}
 
 		// Enviar la solicitud POST a la API CRUD para la etiqueta
@@ -105,11 +101,7 @@ func (c *Crear_noticiaController) Post() {
 			}{
 				Id: noticiaID,
 			},
-			IdTipoContenido: struct {
-				Id int `json:"Id"`
-			}{
-				Id: contenido.Id[i],
-			},
+			IdContenido: contenido.Id[i],
 		}
 
 		// Enviar la solicitud POST a la API CRUD para el contenido
@@ -189,15 +181,10 @@ func (c *Crear_noticiaController) GetAll() {
 // @router /lista [get]
 func (c *Crear_noticiaController) GetAllLista() {
 	defer errorhandler.HandlePanic(&c.Controller)
+	respuesta := helpers.GetAllLista()
 
-	noticias, err := helpers.GetAllLista()
-	if err != nil {
-		logs.Error("Error al obtener todas las noticias con etiquetas y contenido:", err)
-		c.CustomAbort(http.StatusInternalServerError, "Error al obtener todas las noticias con etiquetas y contenido")
-		return
-	}
-
-	c.Data["json"] = noticias
+	c.Ctx.Output.SetStatus(respuesta.Status)
+	c.Data["json"] = respuesta
 	c.ServeJSON()
 }
 
@@ -287,7 +274,7 @@ func (c *Crear_noticiaController) Put() {
 		// Iterar sobre las etiquetas de la respuesta de la API
 		for _, etiquetaAPI := range etiquetaRespuesta.Data {
 			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
-			if etiquetaAPI.TipoEtiqueta.Id == etiquetaPUT {
+			if etiquetaAPI.IdEtiqueta == etiquetaPUT {
 				etiquetaEncontrada = true
 
 				// Si la etiqueta de la API está desactivada, activarla
@@ -300,11 +287,7 @@ func (c *Crear_noticiaController) Put() {
 						}{
 							Id: id, // Id de la noticia
 						},
-						IdTipoEtiqueta: struct {
-							Id int `json:"Id"`
-						}{
-							Id: etiquetaAPI.TipoEtiqueta.Id,
-						},
+						IdEtiqueta: etiquetaAPI.IdEtiqueta,
 					}
 
 					// Enviar la solicitud para activar la etiqueta
@@ -328,11 +311,7 @@ func (c *Crear_noticiaController) Put() {
 				}{
 					Id: id, // Id de la noticia
 				},
-				IdTipoEtiqueta: struct {
-					Id int `json:"Id"`
-				}{
-					Id: etiquetaPUT,
-				},
+				IdEtiqueta: etiquetaPUT,
 			}
 
 			// Enviar la solicitud para crear la nueva etiqueta
@@ -352,7 +331,7 @@ func (c *Crear_noticiaController) Put() {
 		// Iterar sobre las etiquetas de la solicitud PUT
 		for _, etiquetaPUT := range etiqueta.IdTipoEtiqueta {
 			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
-			if etiquetaAPI.TipoEtiqueta.Id == etiquetaPUT {
+			if etiquetaAPI.IdEtiqueta == etiquetaPUT {
 				etiquetaEncontrada = true
 				break
 			}
@@ -362,7 +341,7 @@ func (c *Crear_noticiaController) Put() {
 		if !etiquetaEncontrada {
 			etiquetaAPI.Activo = false
 			etiquetas_desactivar_id = append(etiquetas_desactivar_id, etiquetaAPI.Id)
-			etiquetas_desactivar_fk = append(etiquetas_desactivar_fk, etiquetaAPI.TipoEtiqueta.Id)
+			etiquetas_desactivar_fk = append(etiquetas_desactivar_fk, etiquetaAPI.IdEtiqueta)
 		}
 	}
 
@@ -379,11 +358,8 @@ func (c *Crear_noticiaController) Put() {
 			}{
 				Id: id, // ID de la noticia
 			},
-			IdTipoEtiqueta: struct {
-				Id int `json:"Id"`
-			}{
-				Id: idTipoEtiqueta, // ID del tipo de etiqueta
-			},
+			IdEtiqueta: idTipoEtiqueta, // ID del tipo de etiqueta
+
 		}
 
 		// Enviar la solicitud para desactivar la etiqueta
@@ -423,7 +399,7 @@ func (c *Crear_noticiaController) Put() {
 		// Iterar sobre las etiquetas de la respuesta de la API
 		for _, contenidoAPI := range contenidoRespuesta.Data {
 			// Si el contenido de la solicitud PUT coincide con un contenido de la respuesta de la API
-			if contenidoAPI.IdTipoContenido.Id == contenidoPUT {
+			if contenidoAPI.IdContenido == contenidoPUT {
 				ContenidoEncontrado = true
 
 				// Si el contenido de la API está desactivado, activarlo
@@ -439,11 +415,7 @@ func (c *Crear_noticiaController) Put() {
 						}{
 							Id: id, // Id de la noticia
 						},
-						IdTipoContenido: struct {
-							Id int `json:"Id"`
-						}{
-							Id: contenidoAPI.IdTipoContenido.Id,
-						},
+						IdContenido: contenidoAPI.IdContenido,
 					}
 
 					logs.Info("Activando contenido:", activarContenido)
@@ -468,11 +440,7 @@ func (c *Crear_noticiaController) Put() {
 						}{
 							Id: id, // Id de la noticia
 						},
-						IdTipoContenido: struct {
-							Id int `json:"Id"`
-						}{
-							Id: contenidoAPI.IdTipoContenido.Id,
-						},
+						IdContenido: contenidoAPI.IdContenido,
 					}
 
 					logs.Info("Activando contenido:", activarContenido)
@@ -500,11 +468,7 @@ func (c *Crear_noticiaController) Put() {
 				}{
 					Id: id, // Id de la noticia
 				},
-				IdTipoContenido: struct {
-					Id int `json:"Id"`
-				}{
-					Id: contenidoPUT,
-				},
+				IdContenido: contenidoPUT,
 			}
 
 			logs.Info("Creando nuevo contenido:", nuevoContenido)
@@ -526,7 +490,7 @@ func (c *Crear_noticiaController) Put() {
 		// Iterar sobre las etiquetas de la solicitud PUT
 		for _, contenidoPUT := range contenido.Id {
 			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
-			if contenidoAPI.IdTipoContenido.Id == contenidoPUT {
+			if contenidoAPI.IdContenido == contenidoPUT {
 				contenidoEncontrado = true
 				break
 			}
@@ -536,33 +500,30 @@ func (c *Crear_noticiaController) Put() {
 		if !contenidoEncontrado {
 			contenidoAPI.Activo = false
 			contenido_desactivar_id = append(contenido_desactivar_id, contenidoAPI.Id)
-			contenido_desactivar_fk = append(contenido_desactivar_fk, contenidoAPI.IdTipoContenido.Id)
-			//contenido_desactivar_id_tipo_contenido = append(contenido_desactivar_id_tipo_contenido, contenidoAPI.IdTipoContenido.Id)
+			contenido_desactivar_fk = append(contenido_desactivar_fk, contenidoAPI.IdContenido)
+			//contenido_desactivar_id_tipo_contenido = append(contenido_desactivar_id_tipo_contenido, contenidoAPI.IdContenido.Id)
 		}
 	}
 
 	// Iterar sobre las etiquetas para desactivar
 	for i, idContenido := range contenido_desactivar_id {
 		// Obtener el IdTipoEtiqueta correspondiente del arreglo etiquetas_desactivar_fk
-		IdTipoContenido := contenido_desactivar_fk[i]
+		IdContenido := contenido_desactivar_fk[i]
 
-		logs.Info("IdTipoContenido:", IdTipoContenido)
-		logs.Info("valor a guardar en dato:", contenidoRespuesta.Data[IdTipoContenido-1].Dato)
+		logs.Info("IdContenido:", IdContenido)
+		logs.Info("valor a guardar en dato:", contenidoRespuesta.Data[IdContenido-1].Dato)
 
 		// Crear una estructura EtiquetaData con el campo Activo establecido en false
 		contenidoDesactivar := models.ContenidoData{
 			Activo: false,
-			Dato:   contenidoRespuesta.Data[IdTipoContenido-1].Dato,
+			Dato:   contenidoRespuesta.Data[IdContenido-1].Dato,
 			IdNoticia: struct {
 				Id int `json:"Id"`
 			}{
 				Id: id, // ID de la noticia
 			},
-			IdTipoContenido: struct {
-				Id int `json:"Id"`
-			}{
-				Id: IdTipoContenido, // ID del tipo de etiqueta
-			},
+			IdContenido: IdContenido, // ID del tipo de etiqueta
+
 		}
 
 		// Enviar la solicitud para desactivar la etiqueta

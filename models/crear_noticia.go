@@ -38,9 +38,7 @@ type EtiquetaData struct {
 	IdNoticia struct {
 		Id int `json:"Id"`
 	} `json:"IdNoticia"`
-	IdTipoEtiqueta struct {
-		Id int `json:"Id"`
-	} `json:"IdTipoEtiqueta"`
+	IdEtiqueta int `json:"IdEtiqueta"`
 }
 
 type Contenido struct {
@@ -55,9 +53,7 @@ type ContenidoData struct {
 	IdNoticia struct {
 		Id int `json:"Id"`
 	} `json:"IdNoticia"`
-	IdTipoContenido struct {
-		Id int `json:"Id"`
-	} `json:"IdTipoContenido"`
+	IdContenido int `json:"IdContenido"`
 }
 
 type ModuloPublicacion struct {
@@ -85,12 +81,8 @@ type NoticiaResponse struct {
 }
 
 type NoticiaGetAll struct {
-	Id           int  `json:"Id"`
-	Activo       bool `json:"Activo"`
-	IdTipoEstilo struct {
-		Id int `json:"Id"`
-	} `json:"IdTipoEstilo"`
-	IdTipoPrioridad struct {
-		Id int `json:"Id"`
-	} `json:"IdTipoPrioridad"`
+	Id        int  `json:"Id"`
+	Activo    bool `json:"Activo"`
+	IdEstilo  int  `json:"IdEstilo"`
+	Prioridad int  `json:"Prioridad"`
 }
