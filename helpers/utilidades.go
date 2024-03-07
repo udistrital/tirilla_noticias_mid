@@ -176,43 +176,6 @@ func GetAllLista() (APIResponseDTO requestresponse.APIResponse) {
 	return APIResponseDTO
 }
 
-func obtenerEtiquetasPorNoticia(noticiaID int) (models.Etiqueta, error) {
-	var etiquetaRespuesta models.EtiquetaResponse
-
-	// Construir la URL para obtener las etiquetas asociadas a la noticia
-	apiEtiquetaURL := fmt.Sprintf("%s/etiquetas/%d", beego.AppConfig.String("router.etiqueta"), noticiaID)
-	etiquetasResp := SendRequestToCRUDAPI(apiEtiquetaURL, nil, "GET")
-	if etiquetasResp.Err != nil {
-		logs.Error("Error al obtener las etiquetas asociadas a la noticia:", etiquetasResp.Err)
-		return models.Etiqueta{}, etiquetasResp.Err
-	}
-
-	// Decodificar la respuesta JSON en una estructura de etiquetas
-	if err := json.Unmarshal(etiquetasResp.Body, &etiquetaRespuesta); err != nil {
-		logs.Error("Error al decodificar la respuesta JSON de etiquetas:", err)
-		return models.Etiqueta{}, err
-	}
-
-	// Crear una nueva estructura para el formato deseado
-	etiqueta := models.Etiqueta{
-		Activo: etiquetaRespuesta.Data[0].Activo,
-		IdNoticia: struct {
-			Id int `json:"Id"`
-		}{Id: noticiaID},
-		//IdTipoEtiqueta: make([]int, len(etiquetaRespuesta.Data)),
-		IdTipoEtiqueta: []int{},
-	}
-
-	// Agregar los IDs de las etiquetas al array
-	for _, etiquetaData := range etiquetaRespuesta.Data {
-		if etiquetaData.Activo {
-			etiqueta.IdTipoEtiqueta = append(etiqueta.IdTipoEtiqueta, etiquetaData.IdEtiqueta)
-		}
-	}
-
-	return etiqueta, nil
-}
-
 func obtenerContenidoPorNoticia(noticiaID int) (models.Contenido, error) {
 	var contenidoRespuesta models.ContenidoResponse
 	var contenido models.Contenido

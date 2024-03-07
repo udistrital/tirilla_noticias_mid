@@ -1,10 +1,10 @@
 package models
 
 type NoticiaRequest struct {
-	Noticia           Noticia           `json:"Noticia"`
-	Etiqueta          Etiqueta          `json:"Etiqueta"`
-	Contenido         Contenido         `json:"Contenido"`
-	ModuloPublicacion ModuloPublicacion `json:"ModuloPublicacion"`
+	Noticia   Noticia   `json:"Noticia"`
+	Etiqueta  Etiqueta  `json:"Etiqueta"`
+	Contenido Contenido `json:"Contenido"`
+	//ModuloPublicacion ModuloPublicacion `json:"ModuloPublicacion"`
 }
 
 // NoticiaSend representa la estructura para enviar la noticia al cliente en la ventana de listar noticias
@@ -15,30 +15,22 @@ type NoticiaSend struct {
 }
 
 type Noticia struct {
-	Activo       bool `json:"Activo"`
-	IdTipoEstilo struct {
-		Id int `json:"Id"`
-	} `json:"IdTipoEstilo"`
-	IdTipoPrioridad struct {
-		Id int `json:"Id"`
-	} `json:"IdTipoPrioridad"`
+	Activo    bool `json:"Activo"`
+	IdEstilo  int  `json:"IdEstilo"`
+	Prioridad int  `json:"Prioridad"`
 }
 
 type Etiqueta struct {
-	Activo    bool `json:"Activo"`
-	IdNoticia struct {
-		Id int `json:"Id"`
-	} `json:"IdNoticia"`
-	IdTipoEtiqueta []int `json:"IdTipoEtiqueta"`
+	Activo     bool  `json:"Activo"`
+	IdNoticia  int   `json:"IdNoticia"`
+	IdEtiqueta []int `json:"IdTipoEtiqueta"`
 }
 
 // EtiquetaData representa la estructura para enviar datos de etiqueta a la API CRUD
 type EtiquetaData struct {
-	Activo    bool `json:"Activo"`
-	IdNoticia struct {
-		Id int `json:"Id"`
-	} `json:"IdNoticia"`
-	IdEtiqueta int `json:"IdEtiqueta"`
+	Activo     bool `json:"Activo"`
+	IdNoticia  int  `json:"IdNoticia"`
+	IdEtiqueta int  `json:"IdEtiqueta"`
 }
 
 type Contenido struct {
@@ -48,12 +40,10 @@ type Contenido struct {
 
 // ContenidoData representa la estructura para enviar datos del contenido a la API CRUD
 type ContenidoData struct {
-	Activo    bool   `json:"Activo"`
-	Dato      string `json:"Dato"`
-	IdNoticia struct {
-		Id int `json:"Id"`
-	} `json:"IdNoticia"`
-	IdContenido int `json:"IdContenido"`
+	Activo      bool   `json:"Activo"`
+	Dato        string `json:"Dato"`
+	IdNoticia   int    `json:"IdNoticia"`
+	IdContenido int    `json:"IdContenido"`
 }
 
 type ModuloPublicacion struct {
@@ -62,10 +52,8 @@ type ModuloPublicacion struct {
 
 // ModuloPublicaionData representa la estructura para enviar datos del contenido a la API CRUD
 type ModuloPublicacionData struct {
-	Activo    bool `json:"Activo"`
-	IdNoticia struct {
-		Id int `json:"Id"`
-	} `json:"IdNoticia"`
+	Activo      bool   `json:"Activo"`
+	IdNoticia   int    `json:"IdNoticia"`
 	RefModuloId string `json:"RefModuloId"`
 }
 

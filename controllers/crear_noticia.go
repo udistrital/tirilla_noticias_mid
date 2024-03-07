@@ -39,8 +39,8 @@ func (c *Crear_noticiaController) Post() {
 
 	apiNoticiaURL := beego.AppConfig.String("router.noticia")
 	apiEtiquetaURL := beego.AppConfig.String("router.etiqueta")
-	apiContenidoURL := beego.AppConfig.String("router.contenido")
-	apiModuloURL := beego.AppConfig.String("router.modulo")
+	//apiContenidoURL := beego.AppConfig.String("router.contenido")
+	//apiModuloURL := beego.AppConfig.String("router.modulo")
 
 	var reqBody models.NoticiaRequest
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &reqBody); err != nil {
@@ -51,8 +51,8 @@ func (c *Crear_noticiaController) Post() {
 
 	noticia := reqBody.Noticia
 	etiqueta := reqBody.Etiqueta
-	contenido := reqBody.Contenido
-	moduloPublicaion := reqBody.ModuloPublicacion
+	//contenido := reqBody.Contenido
+	//moduloPublicaion := reqBody.ModuloPublicacion
 
 	apiResp := helpers.SendRequestToCRUDAPI(apiNoticiaURL, noticia, "POST")
 	if apiResp.Err != nil {
@@ -67,17 +67,14 @@ func (c *Crear_noticiaController) Post() {
 		c.CustomAbort(http.StatusInternalServerError, "Error al decodificar la respuesta de la API CRUD para Noticia")
 		return
 	}
+
 	noticiaID := noticiaResp.Data.ID
 
 	// Hacer solicitudes POST a la API CRUD para Etiqueta
-	for _, etiquetaID := range etiqueta.IdTipoEtiqueta {
+	for _, etiquetaID := range etiqueta.IdEtiqueta {
 		etiquetaData := models.EtiquetaData{
-			Activo: true,
-			IdNoticia: struct {
-				Id int `json:"Id"`
-			}{
-				Id: noticiaID,
-			},
+			Activo:     true,
+			IdNoticia:  noticiaID,
 			IdEtiqueta: etiquetaID,
 		}
 
@@ -91,48 +88,44 @@ func (c *Crear_noticiaController) Post() {
 	}
 
 	// Hacer solicitudes POST a la API CRUD para Contenido
-	for i, _ := range contenido.Id {
-		datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
-		contenidoData := models.ContenidoData{
-			Activo: true,
-			Dato:   datoJSON,
-			IdNoticia: struct {
-				Id int `json:"Id"`
-			}{
-				Id: noticiaID,
-			},
-			IdContenido: contenido.Id[i],
-		}
+	/*
+		for i, _ := range contenido.Id {
+			datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
+			contenidoData := models.ContenidoData{
+				Activo:      true,
+				Dato:        string(datoJSON),
+				IdNoticia:   noticiaID,
+				IdContenido: contenido.Id[i],
+			}
 
-		// Enviar la solicitud POST a la API CRUD para el contenido
-		apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, contenidoData, "POST")
-		if apiResp.Err != nil {
-			logs.Error("Error al enviar la solicitud a la API CRUD para el contenido:", apiResp.Err)
-			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para el contenido")
-			return
+			// Enviar la solicitud POST a la API CRUD para el contenido
+			apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, contenidoData, "POST")
+			if apiResp.Err != nil {
+				logs.Error("Error al enviar la solicitud a la API CRUD para el contenido:", apiResp.Err)
+				c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para el contenido")
+				return
+			}
 		}
-	}
+	*/
 
 	// Hacer solicitudes POST a la API CRUD para ModuloPublicaion
-	for _, moduloID := range moduloPublicaion.IdModulo {
-		moduloPublicaionData := models.ModuloPublicacionData{
-			Activo: true,
-			IdNoticia: struct {
-				Id int `json:"Id"`
-			}{
-				Id: noticiaID,
-			},
-			RefModuloId: moduloID,
-		}
+	/*
+		for _, moduloID := range moduloPublicaion.IdModulo {
+			moduloPublicaionData := models.ModuloPublicacionData{
+				Activo:      true,
+				IdNoticia:   noticiaID,
+				RefModuloId: moduloID,
+			}
 
-		// Enviar la solicitud POST a la API CRUD para el moduloPublicaion
-		apiResp := helpers.SendRequestToCRUDAPI(apiModuloURL, moduloPublicaionData, "POST")
-		if apiResp.Err != nil {
-			logs.Error("Error al enviar la solicitud a la API CRUD para el moduloPublicaion:", apiResp.Err)
-			c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para el moduloPublicaion")
-			return
+			// Enviar la solicitud POST a la API CRUD para el moduloPublicaion
+			apiResp := helpers.SendRequestToCRUDAPI(apiModuloURL, moduloPublicaionData, "POST")
+			if apiResp.Err != nil {
+				logs.Error("Error al enviar la solicitud a la API CRUD para el moduloPublicaion:", apiResp.Err)
+				c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para el moduloPublicaion")
+				return
+			}
 		}
-	}
+	*/
 
 	// Respondiendo al cliente Angular
 	c.Ctx.Output.SetStatus(http.StatusCreated)
@@ -233,11 +226,11 @@ func (c *Crear_noticiaController) Put() {
 	logs.Info("Cuerpo de la solicitud:", reqBody)
 	noticia := reqBody.Noticia
 	etiqueta := reqBody.Etiqueta
-	contenido := reqBody.Contenido
-	moduloPublicaion := reqBody.ModuloPublicacion
+	//contenido := reqBody.Contenido
+	//moduloPublicaion := reqBody.ModuloPublicacion
 
 	logs.Info("Noticiaaaaaaa:", noticia)
-	logs.Info("Modulo de publicación:", moduloPublicaion)
+	//logs.Info("Modulo de publicación:", moduloPublicaion)
 
 	// Actualizar la noticia en la tabla Noticia
 	apiNoticiaURL := fmt.Sprintf("%s/%d", beego.AppConfig.String("router.noticia"), id)
@@ -268,7 +261,7 @@ func (c *Crear_noticiaController) Put() {
 	//############################################################################################################# Etiqueta
 
 	// Crear nuevas etiquetas para las etiquetas en la solicitud PUT que no estén en la respuesta de la API
-	for _, etiquetaPUT := range etiqueta.IdTipoEtiqueta {
+	for _, etiquetaPUT := range etiqueta.IdEtiqueta {
 		etiquetaEncontrada := false
 
 		// Iterar sobre las etiquetas de la respuesta de la API
@@ -281,12 +274,8 @@ func (c *Crear_noticiaController) Put() {
 				if !etiquetaAPI.Activo {
 					logs.Info("Activando la etiqueta:", etiquetaAPI)
 					activarEtiqueta := models.EtiquetaData{
-						Activo: true,
-						IdNoticia: struct {
-							Id int `json:"Id"`
-						}{
-							Id: id, // Id de la noticia
-						},
+						Activo:     true,
+						IdNoticia:  id, // Id de la noticia
 						IdEtiqueta: etiquetaAPI.IdEtiqueta,
 					}
 
@@ -305,12 +294,8 @@ func (c *Crear_noticiaController) Put() {
 		// Si la etiqueta de la solicitud PUT no está en la respuesta de la API, crear una nueva etiqueta
 		if !etiquetaEncontrada {
 			nuevaEtiqueta := models.EtiquetaData{
-				Activo: true,
-				IdNoticia: struct {
-					Id int `json:"Id"`
-				}{
-					Id: id, // Id de la noticia
-				},
+				Activo:     true,
+				IdNoticia:  id, // Id de la noticia
 				IdEtiqueta: etiquetaPUT,
 			}
 
@@ -329,7 +314,7 @@ func (c *Crear_noticiaController) Put() {
 		etiquetaEncontrada := false
 
 		// Iterar sobre las etiquetas de la solicitud PUT
-		for _, etiquetaPUT := range etiqueta.IdTipoEtiqueta {
+		for _, etiquetaPUT := range etiqueta.IdEtiqueta {
 			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
 			if etiquetaAPI.IdEtiqueta == etiquetaPUT {
 				etiquetaEncontrada = true
@@ -352,12 +337,8 @@ func (c *Crear_noticiaController) Put() {
 
 		// Crear una estructura EtiquetaData con el campo Activo establecido en false
 		etiquetaDesactivar := models.EtiquetaData{
-			Activo: false,
-			IdNoticia: struct {
-				Id int `json:"Id"`
-			}{
-				Id: id, // ID de la noticia
-			},
+			Activo:     false,
+			IdNoticia:  id,             // ID de la noticia
 			IdEtiqueta: idTipoEtiqueta, // ID del tipo de etiqueta
 
 		}
@@ -393,109 +374,99 @@ func (c *Crear_noticiaController) Put() {
 	logs.Info("Respuesta decodificada de la API CRUD para contenido:", contenidoRespuesta)
 
 	// Crear nuevas etiquetas para las etiquetas en la solicitud PUT que no estén en la respuesta de la API
-	for i, contenidoPUT := range contenido.Id {
-		ContenidoEncontrado := false
+	/*
+		for i, contenidoPUT := range contenido.Id {
+			ContenidoEncontrado := false
 
-		// Iterar sobre las etiquetas de la respuesta de la API
-		for _, contenidoAPI := range contenidoRespuesta.Data {
-			// Si el contenido de la solicitud PUT coincide con un contenido de la respuesta de la API
-			if contenidoAPI.IdContenido == contenidoPUT {
-				ContenidoEncontrado = true
+			// Iterar sobre las etiquetas de la respuesta de la API
+			for _, contenidoAPI := range contenidoRespuesta.Data {
+				// Si el contenido de la solicitud PUT coincide con un contenido de la respuesta de la API
+				if contenidoAPI.IdContenido == contenidoPUT {
+					ContenidoEncontrado = true
 
-				// Si el contenido de la API está desactivado, activarlo
-				if !contenidoAPI.Activo {
-					datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
-					// logs.Info("Activando la etiqueta:", contenidoAPI)
-					//logs.Info("Contenido:", contenido.Dato[contenidoPUT])
-					activarContenido := models.ContenidoData{
-						Activo: true,
-						Dato:   datoJSON,
-						IdNoticia: struct {
-							Id int `json:"Id"`
-						}{
-							Id: id, // Id de la noticia
-						},
-						IdContenido: contenidoAPI.IdContenido,
+					// Si el contenido de la API está desactivado, activarlo
+					if !contenidoAPI.Activo {
+						datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
+						// logs.Info("Activando la etiqueta:", contenidoAPI)
+						//logs.Info("Contenido:", contenido.Dato[contenidoPUT])
+						activarContenido := models.ContenidoData{
+							Activo:      true,
+							Dato:        datoJSON,
+							IdNoticia:   id, // Id de la noticia
+							IdContenido: contenidoAPI.IdContenido,
+						}
+
+						logs.Info("Activando contenido:", activarContenido)
+
+						// Enviar la solicitud para activar el contenido
+						apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(contenidoAPI.Id), activarContenido, "PUT")
+						if apiResp.Err != nil {
+							logs.Error("Error al enviar la solicitud a la API CRUD para activar el contenido:", apiResp.Err)
+							c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar el contenido")
+							return
+						}
+						break
+					} else {
+						datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
+						// logs.Info("Activando la etiqueta:", contenidoAPI)
+						//logs.Info("Contenido:", contenido.Dato[contenidoPUT])
+						activarContenido := models.ContenidoData{
+							Activo:      true,
+							Dato:        datoJSON,
+							IdNoticia:   id, // Id de la noticia
+							IdContenido: contenidoAPI.IdContenido,
+						}
+
+						logs.Info("Activando contenido:", activarContenido)
+
+						// Enviar la solicitud para activar el contenido
+						apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(contenidoAPI.Id), activarContenido, "PUT")
+						if apiResp.Err != nil {
+							logs.Error("Error al enviar la solicitud a la API CRUD para activar el contenido:", apiResp.Err)
+							c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar el contenido")
+							return
+						}
+						break
 					}
+				}
+			}
 
-					logs.Info("Activando contenido:", activarContenido)
+			// Si el contenido de la solicitud PUT no está en la respuesta de la API, crear un nuevo contenido
+			if !ContenidoEncontrado {
+				datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[contenidoPUT])
+				nuevoContenido := models.ContenidoData{
+					Activo:      true,
+					Dato:        datoJSON,
+					IdNoticia:   id, // Id de la noticia
+					IdContenido: contenidoPUT,
+				}
 
-					// Enviar la solicitud para activar el contenido
-					apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(contenidoAPI.Id), activarContenido, "PUT")
-					if apiResp.Err != nil {
-						logs.Error("Error al enviar la solicitud a la API CRUD para activar el contenido:", apiResp.Err)
-						c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar el contenido")
-						return
-					}
-					break
-				} else {
-					datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[i])
-					// logs.Info("Activando la etiqueta:", contenidoAPI)
-					//logs.Info("Contenido:", contenido.Dato[contenidoPUT])
-					activarContenido := models.ContenidoData{
-						Activo: true,
-						Dato:   datoJSON,
-						IdNoticia: struct {
-							Id int `json:"Id"`
-						}{
-							Id: id, // Id de la noticia
-						},
-						IdContenido: contenidoAPI.IdContenido,
-					}
+				logs.Info("Creando nuevo contenido:", nuevoContenido)
 
-					logs.Info("Activando contenido:", activarContenido)
-
-					// Enviar la solicitud para activar el contenido
-					apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL+"/"+strconv.Itoa(contenidoAPI.Id), activarContenido, "PUT")
-					if apiResp.Err != nil {
-						logs.Error("Error al enviar la solicitud a la API CRUD para activar el contenido:", apiResp.Err)
-						c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para activar el contenido")
-						return
-					}
-					break
+				// Enviar la solicitud para crear la nueva etiqueta
+				apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, nuevoContenido, "POST")
+				if apiResp.Err != nil {
+					logs.Error("Error al enviar la solicitud a la API CRUD para la etiqueta:", apiResp.Err)
+					c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para la etiqueta")
+					return
 				}
 			}
 		}
-
-		// Si el contenido de la solicitud PUT no está en la respuesta de la API, crear un nuevo contenido
-		if !ContenidoEncontrado {
-			datoJSON := fmt.Sprintf(`{"dato": "%s"}`, contenido.Dato[contenidoPUT])
-			nuevoContenido := models.ContenidoData{
-				Activo: true,
-				Dato:   datoJSON,
-				IdNoticia: struct {
-					Id int `json:"Id"`
-				}{
-					Id: id, // Id de la noticia
-				},
-				IdContenido: contenidoPUT,
-			}
-
-			logs.Info("Creando nuevo contenido:", nuevoContenido)
-
-			// Enviar la solicitud para crear la nueva etiqueta
-			apiResp := helpers.SendRequestToCRUDAPI(apiContenidoURL, nuevoContenido, "POST")
-			if apiResp.Err != nil {
-				logs.Error("Error al enviar la solicitud a la API CRUD para la etiqueta:", apiResp.Err)
-				c.CustomAbort(http.StatusInternalServerError, "Error al enviar la solicitud a la API CRUD para la etiqueta")
-				return
-			}
-		}
-	}
-
+	*/
 	// Iterar sobre las etiquetas de la respuesta de la API
 	for _, contenidoAPI := range contenidoRespuesta.Data {
 		contenidoEncontrado := false
 
 		// Iterar sobre las etiquetas de la solicitud PUT
-		for _, contenidoPUT := range contenido.Id {
-			// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
-			if contenidoAPI.IdContenido == contenidoPUT {
-				contenidoEncontrado = true
-				break
+		/*
+			for _, contenidoPUT := range contenido.Id {
+				// Si la etiqueta de la solicitud PUT coincide con una etiqueta de la respuesta de la API
+				if contenidoAPI.IdContenido == contenidoPUT {
+					contenidoEncontrado = true
+					break
+				}
 			}
-		}
-
+		*/
 		// Si la etiqueta de la API no está en la solicitud PUT, desactivarla
 		if !contenidoEncontrado {
 			contenidoAPI.Activo = false
@@ -515,13 +486,9 @@ func (c *Crear_noticiaController) Put() {
 
 		// Crear una estructura EtiquetaData con el campo Activo establecido en false
 		contenidoDesactivar := models.ContenidoData{
-			Activo: false,
-			Dato:   contenidoRespuesta.Data[IdContenido-1].Dato,
-			IdNoticia: struct {
-				Id int `json:"Id"`
-			}{
-				Id: id, // ID de la noticia
-			},
+			Activo:      false,
+			Dato:        contenidoRespuesta.Data[IdContenido-1].Dato,
+			IdNoticia:   id,          // ID de la noticia
 			IdContenido: IdContenido, // ID del tipo de etiqueta
 
 		}
