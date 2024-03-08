@@ -8,12 +8,12 @@
 package routers
 
 import (
-	"github.com/udistrital/noticias_mid/controllers"
 	"github.com/astaxie/beego"
+	"github.com/udistrital/tirilla_noticias_mid/controllers"
 )
 
 func init() {
-    ns := beego.NewNamespace("/v1",
+	ns := beego.NewNamespace("/v1",
 		beego.NSNamespace("/noticia-mid",
 			beego.NSInclude(
 				&controllers.Crear_noticiaController{},
