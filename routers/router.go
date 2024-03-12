@@ -16,9 +16,10 @@ func init() {
 	ns := beego.NewNamespace("/v1",
 		beego.NSNamespace("/noticia-mid",
 			beego.NSInclude(
-				&controllers.Crear_noticiaController{},
+				&controllers.NoticiaController{},
 			),
 		),
 	)
 	beego.AddNamespace(ns)
+
 }

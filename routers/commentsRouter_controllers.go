@@ -9,7 +9,7 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"] = append(beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"],
         beego.ControllerComments{
-            Method: "Post",
+            Method: "PostNoticia",
             Router: "/",
             AllowHTTPMethods: []string{"post"},
             MethodParams: param.Make(),
@@ -18,7 +18,7 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"] = append(beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"],
         beego.ControllerComments{
-            Method: "GetAll",
+            Method: "GetAllNoticias",
             Router: "/",
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
@@ -36,7 +36,7 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"] = append(beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"],
         beego.ControllerComments{
-            Method: "Put",
+            Method: "PutNoticia",
             Router: "/:id",
             AllowHTTPMethods: []string{"put"},
             MethodParams: param.Make(),
@@ -48,15 +48,6 @@ func init() {
             Method: "Delete",
             Router: "/:id",
             AllowHTTPMethods: []string{"delete"},
-            MethodParams: param.Make(),
-            Filters: nil,
-            Params: nil})
-
-    beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"] = append(beego.GlobalControllerRouter["github.com/udistrital/tirilla_noticias_mid/controllers:Crear_noticiaController"],
-        beego.ControllerComments{
-            Method: "GetAllLista",
-            Router: "/lista",
-            AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
             Params: nil})
